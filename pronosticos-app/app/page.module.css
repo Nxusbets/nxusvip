@@ -1,55 +1,30 @@
+
 .page {
-  font-family: sans-serif;
-  background-color: #f4f4f4;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  background-color: var(--dark-background);
 }
 
 .main {
-  width: 80%;
-  max-width: 1200px;
-  margin: 2rem auto;
-  padding: 2rem;
-  background-color: white;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.pronosticosContainer {
-  margin-top: 2rem;
+  background-color: var(--dark-main-background);
 }
 
 .pronosticosTitle {
-  color: #333;
-  margin-bottom: 1rem;
-}
-
-.pronosticosTable {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 1rem;
+  color: var(--light-text);
 }
 
 .pronosticosTable th,
 .pronosticosTable td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
+  border: 1px solid var(--table-border);
 }
 
 .pronosticosTable th {
-  background-color: #f2f2f2;
+  background-color: var(--table-header-background);
+  color: var(--light-text);
 }
 
 .pronosticosTable tbody tr:nth-child(even) {
-  background-color: #f9f9f9;
-}
-
-.graficaContainer {
-  margin-top: 2rem;
+  background-color: var(--table-row-even-background);
 }
 
 .graficaTitle {
-  color: #333;
-  margin-bottom: 1rem;
+color: var(--yellow-title);
 }

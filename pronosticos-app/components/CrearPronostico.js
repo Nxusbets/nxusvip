@@ -50,7 +50,7 @@ const CrearPronostico = ({ onPronosticoCreado }) => {
             <div className="row justify-content-center">
                 <div className="col-md-6">
                     <div className="card">
-                        <div className="card-header bg-warning text-black text-center">
+                        <div className="card-header" style={{ backgroundColor: 'yellow', color: 'black', textAlign: 'center' }}>
                             <h2>Crear Pronóstico</h2>
                         </div>
                         <div className="card-body">
@@ -68,7 +68,7 @@ const CrearPronostico = ({ onPronosticoCreado }) => {
                                     <input type="number" className="form-control" value={cuota} onChange={(e) => setCuota(e.target.value)} required />
                                 </div>
                                 <div className="d-grid">
-                                    <button type="submit" className="btn btn-warning">Crear Pronóstico</button>
+                                    <button type="submit" className="btn" style={{ backgroundColor: 'yellow', color: 'black' }}>Crear Pronóstico</button>
                                 </div>
                             </form>
                         </div>

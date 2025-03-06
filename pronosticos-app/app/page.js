@@ -6,6 +6,7 @@ import AnalisisPronosticos from '../components/AnalisisPronosticos';
 import Navbar from '../components/Navbar';
 import styles from './page.module.css';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import Footer from '@/components/Footer';
 
 export default function Home() {
     const [pronosticos, setPronosticos] = useState([]);
@@ -98,6 +99,7 @@ export default function Home() {
                     </>
                 )}
             </main>
+            <Footer />
         </div>
     );
 }
