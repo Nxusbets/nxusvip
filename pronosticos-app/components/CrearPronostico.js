@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import axios from 'axios';
+import { motion } from 'framer-motion';
 
 const CrearPronostico = ({ onPronosticoCreado }) => {
     const [partido, setPartido] = useState('');
@@ -22,8 +23,8 @@ const CrearPronostico = ({ onPronosticoCreado }) => {
                 partido,
                 pronostico,
                 cuota: cuotaNum,
-                ganancia: 0, // La ganancia se calculará en AnalisisPronosticos
-                resultado: null, // Estado inicial: Pendiente
+                ganancia: 0,
+                resultado: null,
                 _id: Date.now().toString(),
                 createdAt: new Date().toISOString(),
             };
@@ -45,11 +46,31 @@ const CrearPronostico = ({ onPronosticoCreado }) => {
         }
     };
 
+    const containerVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+    };
+
+    const cardVariants = {
+        hidden: { opacity: 0, scale: 0.9 },
+        visible: { opacity: 1, scale: 1, transition: { duration: 0.4 } },
+    };
+
     return (
-        <div className="container mt-4">
+        <motion.div
+            className="container mt-4"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+        >
             <div className="row justify-content-center">
                 <div className="col-md-6">
-                    <div className="card">
+                    <motion.div
+                        className="card"
+                        variants={cardVariants}
+                        initial="hidden"
+                        animate="visible"
+                    >
                         <div className="card-header" style={{ backgroundColor: 'yellow', color: 'black', textAlign: 'center' }}>
                             <h2>Crear Pronóstico</h2>
                         </div>
@@ -72,10 +93,10 @@ const CrearPronostico = ({ onPronosticoCreado }) => {
                                 </div>
                             </form>
                         </div>
-                    </div>
+                    </motion.div>
                 </div>
             </div>
-        </div>
+        </motion.div>
     );
 };
 
