@@ -1,63 +1,103 @@
-// app/page.js
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import CrearPronostico from '../components/CrearPronostico';
 import AnalisisPronosticos from '../components/AnalisisPronosticos';
-import styles from "./page.module.css";
+import Navbar from '../components/Navbar';
+import styles from './page.module.css';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 export default function Home() {
-  const [pronosticos, setPronosticos] = useState([]);
+    const [pronosticos, setPronosticos] = useState([]);
+    const [gananciasPorDia, setGananciasPorDia] = useState([]);
+    const [isClient, setIsClient] = useState(false);
+    const [componenteActivo, setComponenteActivo] = useState('CrearPronostico');
+    const pronosticosRef = useRef(pronosticos);
 
-  const fetchPronosticos = async () => {
-    try {
-      const pronosticosRes = await axios.get('/api/pronosticos');
-      setPronosticos(pronosticosRes.data);
-    } catch (error) {
-      console.error('Error fetching pronosticos:', error);
-    }
-  };
+    console.log('page.js re-render'); // Log para rastrear re-renderizaciones
 
-  useEffect(() => {
-    fetchPronosticos();
-  }, []);
+    const fetchPronosticos = async () => {
+        try {
+            console.log('fetchPronosticos called'); // Log para rastrear llamadas a fetchPronosticos
+            const pronosticosRes = await axios.get('/api/pronosticos');
+            setPronosticos(pronosticosRes.data);
+        } catch (error) {
+            console.error('Error fetching pronosticos:', error);
+        }
+    };
 
-  const handlePronosticoCreado = () => {
-    // Recarga los pronósticos cuando se crea uno nuevo
-    fetchPronosticos();
-  };
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <CrearPronostico onPronosticoCreado={handlePronosticoCreado} />
-        <AnalisisPronosticos />
-        <div>
-          <h2>Pronósticos</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Partido</th>
-                <th>Pronóstico</th>
-                <th>Resultado</th>
-                <th>Cuota</th>
-                <th>Ganancia</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pronosticos.map((pronostico) => (
-                <tr key={pronostico._id}>
-                  <td>{pronostico.partido}</td>
-                  <td>{pronostico.pronostico}</td>
-                  <td>{pronostico.resultado}</td>
-                  <td>{pronostico.cuota}</td>
-                  <td>{pronostico.ganancia}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    useEffect(() => {
+        fetchPronosticos();
+    }, []);
+
+    useEffect(() => {
+        if (pronosticos.length > 0) {
+            const gananciasDiarias = calcularGananciasPorDia(pronosticos);
+            setGananciasPorDia(gananciasDiarias);
+        }
+    }, [pronosticos]);
+
+    const calcularGananciasPorDia = (pronosticos) => {
+        const ganancias = {};
+        pronosticos.forEach(pronostico => {
+            const fecha = new Date(pronostico.createdAt).toLocaleDateString();
+            if (!ganancias[fecha]) {
+                ganancias[fecha] = 0;
+            }
+            ganancias[fecha] += pronostico.ganancia;
+        });
+        const gananciasArray = Object.keys(ganancias).map(fecha => ({ fecha, ganancia: ganancias[fecha] }));
+        return gananciasArray;
+    };
+
+    const handlePronosticoCreado = (nuevoPronostico) => {
+        setPronosticos(prevPronosticos => [nuevoPronostico, ...prevPronosticos]);
+    };
+
+    const handleComponenteSeleccionado = (componente) => {
+        setComponenteActivo(componente);
+    };
+
+    const actualizarPronosticos = useCallback((pronosticosActualizados) => {
+        console.log('actualizarPronosticos called'); // Log para rastrear llamadas a actualizarPronosticos
+        if (JSON.stringify(pronosticosRef.current) !== JSON.stringify(pronosticosActualizados)) {
+            setPronosticos(pronosticosActualizados);
+            pronosticosRef.current = pronosticosActualizados;
+        }
+    }, []);
+
+    useEffect(() => {
+        pronosticosRef.current = pronosticos;
+    }, [pronosticos]);
+
+    return (
+        <div className={styles.page}>
+            <Navbar onComponenteSeleccionado={handleComponenteSeleccionado} />
+            <main className={styles.main}>
+                {componenteActivo === 'CrearPronostico' && <CrearPronostico onPronosticoCreado={handlePronosticoCreado} />}
+                {componenteActivo === 'AnalisisPronosticos' && (
+                    <>
+                        <AnalisisPronosticos pronosticos={pronosticos} actualizarPronosticos={actualizarPronosticos} />
+                        <div className={styles.graficaContainer}>
+                            <h2 className={styles.graficaTitle}>Ganancias por Día</h2>
+                            {isClient && gananciasPorDia && gananciasPorDia.length > 0 && (
+                                <LineChart width={730} height={250} data={gananciasPorDia}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="fecha" />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Legend />
+                                    <Line type="monotone" dataKey="ganancia" stroke="#8884d8" activeDot={{ r: 8 }} />
+                                </LineChart>
+                            )}
+                        </div>
+                    </>
+                )}
+            </main>
         </div>
-      </main>
-    </div>
-  );
+    );
 }
