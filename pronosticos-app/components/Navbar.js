@@ -1,12 +1,24 @@
 'use client';
 import { useState } from 'react';
+import { useSession, signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 const Navbar = ({ onComponenteSeleccionado }) => {
+    const { data: session, status } = useSession();
     const [componenteActivo, setComponenteActivo] = useState('CrearPronostico');
+    const router = useRouter();
 
     const handleClick = (componente) => {
         setComponenteActivo(componente);
         onComponenteSeleccionado(componente);
+    };
+
+    const handleSignOut = async () => {
+        try {
+            await signOut({ callbackUrl: '/login' });
+        } catch (error) {
+            console.error('Error signing out:', error);
+        }
     };
 
     return (
@@ -24,8 +36,8 @@ const Navbar = ({ onComponenteSeleccionado }) => {
                 >
                     <span className="navbar-toggler-icon"></span>
                 </button>
-                <div className="collapse navbar-collapse justify-content-end" id="navbarNav">
-                    <ul className="navbar-nav">
+                <div className="collapse navbar-collapse" id="navbarNav">
+                    <ul className="navbar-nav me-auto"> {/* Alineación a la izquierda */}
                         <li className={`nav-item ${componenteActivo === 'CrearPronostico' ? 'active' : ''}`}>
                             <button className="nav-link btn btn-link text-dark" onClick={() => handleClick('CrearPronostico')}>
                                 Crear Pronóstico
@@ -36,6 +48,20 @@ const Navbar = ({ onComponenteSeleccionado }) => {
                                 Resultados
                             </button>
                         </li>
+                    </ul>
+                    <ul className="navbar-nav"> {/* Alineación a la derecha */}
+                        {status === 'authenticated' && (
+                            <>
+                                <li className="nav-item">
+                                    <span className="nav-link">Hola {session.user.email}</span>
+                                </li>
+                                <li className="nav-item">
+                                    <button className="nav-link btn btn-link text-dark" onClick={handleSignOut}>
+                                        Cerrar Sesión
+                                    </button>
+                                </li>
+                            </>
+                        )}
                     </ul>
                 </div>
             </div>

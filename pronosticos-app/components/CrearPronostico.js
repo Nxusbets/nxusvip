@@ -7,42 +7,53 @@ const CrearPronostico = ({ onPronosticoCreado }) => {
     const [partido, setPartido] = useState('');
     const [pronostico, setPronostico] = useState('');
     const [cuota, setCuota] = useState('');
+    const [mensaje, setMensaje] = useState(null);
+    const [cargando, setCargando] = useState(false); // Estado para indicador de carga
+
+    const mostrarMensaje = (tipo, texto) => {
+        setMensaje({ tipo, texto });
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setMensaje(null);
+        setCargando(true); // Iniciar carga
 
         const cuotaNum = parseFloat(cuota);
 
         if (isNaN(cuotaNum)) {
-            console.error('Cuota no es un número válido.');
+            mostrarMensaje('error', 'Cuota no es un número válido.');
+            setCargando(false); // Detener carga
             return;
         }
 
         try {
-            const nuevoPronostico = {
-                partido,
-                pronostico,
-                cuota: cuotaNum,
-                ganancia: 0,
-                resultado: null,
-                _id: Date.now().toString(),
-                createdAt: new Date().toISOString(),
-            };
-
-            onPronosticoCreado(nuevoPronostico);
-
-            await axios.post('/api/pronosticos', {
+            const response = await axios.post('/api/pronosticos', {
                 partido,
                 pronostico,
                 cuota: cuotaNum,
                 ganancia: 0,
             });
 
-            setPartido('');
-            setPronostico('');
-            setCuota('');
+            if (response.status === 201) {
+                mostrarMensaje('success', 'Pronóstico creado correctamente.');
+                setPartido('');
+                setPronostico('');
+                setCuota('');
+                onPronosticoCreado();
+            } else {
+                mostrarMensaje('error', 'Error al crear el pronóstico.');
+            }
         } catch (error) {
             console.error('Error al crear el pronóstico:', error);
+            if (error.response) {
+                console.log('Respuesta del servidor:', error.response);
+                mostrarMensaje('error', `Error: ${error.response.data.error || 'Error desconocido'}`);
+            } else {
+                mostrarMensaje('error', 'Error al crear el pronóstico.');
+            }
+        } finally {
+            setCargando(false); // Detener carga
         }
     };
 
@@ -75,6 +86,11 @@ const CrearPronostico = ({ onPronosticoCreado }) => {
                             <h2>Crear Pronóstico</h2>
                         </div>
                         <div className="card-body">
+                            {mensaje && (
+                                <div className={`alert alert-${mensaje.tipo === 'success' ? 'success' : 'danger'}`}>
+                                    {mensaje.texto}
+                                </div>
+                            )}
                             <form onSubmit={handleSubmit}>
                                 <div className="mb-3">
                                     <label className="form-label">Partido</label>
@@ -89,7 +105,9 @@ const CrearPronostico = ({ onPronosticoCreado }) => {
                                     <input type="number" className="form-control" value={cuota} onChange={(e) => setCuota(e.target.value)} required />
                                 </div>
                                 <div className="d-grid">
-                                    <button type="submit" className="btn" style={{ backgroundColor: 'yellow', color: 'black' }}>Crear Pronóstico</button>
+                                    <button type="submit" className="btn" style={{ backgroundColor: 'yellow', color: 'black' }} disabled={cargando}>
+                                        {cargando ? 'Cargando...' : 'Crear Pronóstico'}
+                                    </button>
                                 </div>
                             </form>
                         </div>

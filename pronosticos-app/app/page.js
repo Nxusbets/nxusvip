@@ -1,59 +1,75 @@
 'use client';
-import { useState, useEffect, useCallback, useRef } from 'react';
-import axios from 'axios';
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import CrearPronostico from '../components/CrearPronostico';
 import AnalisisPronosticos from '../components/AnalisisPronosticos';
 import Navbar from '../components/Navbar';
 import styles from './page.module.css';
 import Footer from '@/components/Footer';
+import axios from 'axios';
 
 export default function Home() {
-    const [pronosticos, setPronosticos] = useState([]);
+    const { data: session, status } = useSession();
+    const router = useRouter();
+    const [isLoading, setIsLoading] = useState(true);
     const [componenteActivo, setComponenteActivo] = useState('CrearPronostico');
-    const pronosticosRef = useRef(pronosticos);
+    const [pronosticos, setPronosticos] = useState([]);
 
-    console.log('page.js re-render'); // Log para rastrear re-renderizaciones
+    useEffect(() => {
+        const checkAuth = () => {
+            console.log("useEffect: status =", status, "session =", session);
+
+            if (status === 'unauthenticated') {
+                console.log("useEffect: Redirigiendo a /login");
+                router.push('/login');
+            } else if (status === 'authenticated' && session?.user && session.user.role) {
+                console.log("useEffect: Autenticado, setIsLoading(false)");
+                setIsLoading(false);
+                fetchPronosticos(); // Obtener pronósticos al cargar el componente
+            }
+        };
+
+        checkAuth();
+    }, [status, session, router]);
 
     const fetchPronosticos = async () => {
         try {
-            console.log('fetchPronosticos called'); // Log para rastrear llamadas a fetchPronosticos
-            const pronosticosRes = await axios.get('/api/pronosticos');
-            setPronosticos(pronosticosRes.data);
+            const response = await axios.get('/api/pronosticos');
+            setPronosticos(response.data);
         } catch (error) {
             console.error('Error fetching pronosticos:', error);
         }
-    };
-
-    useEffect(() => {
-        fetchPronosticos();
-    }, []);
-
-    const handlePronosticoCreado = (nuevoPronostico) => {
-        setPronosticos(prevPronosticos => [nuevoPronostico, ...prevPronosticos]);
     };
 
     const handleComponenteSeleccionado = (componente) => {
         setComponenteActivo(componente);
     };
 
-    const actualizarPronosticos = useCallback((pronosticosActualizados) => {
-        console.log('actualizarPronosticos called'); // Log para rastrear llamadas a actualizarPronosticos
-        if (JSON.stringify(pronosticosRef.current) !== JSON.stringify(pronosticosActualizados)) {
-            setPronosticos(pronosticosActualizados);
-            pronosticosRef.current = pronosticosActualizados;
-        }
-    }, []);
+    const handlePronosticoCreado = () => {
+        console.log("Pronóstico creado");
+        fetchPronosticos(); // Actualizar pronósticos después de la creación
+    };
 
-    useEffect(() => {
-        pronosticosRef.current = pronosticos;
-    }, [pronosticos]);
+    const actualizarPronosticos = (pronosticosActualizados) => {
+        setPronosticos(pronosticosActualizados);
+    };
+
+    if (isLoading) {
+        console.log("isLoading: true");
+        return <p>Cargando...</p>;
+    }
+
+    console.log("session:", session);
+    console.log("session?.user?.role:", session?.user?.role);
 
     return (
         <div className={styles.page}>
             <Navbar onComponenteSeleccionado={handleComponenteSeleccionado} />
             <main className={styles.main}>
-                {componenteActivo === 'CrearPronostico' && <CrearPronostico onPronosticoCreado={handlePronosticoCreado} />}
-                {componenteActivo === 'AnalisisPronosticos' && (
+                {componenteActivo === "CrearPronostico" ? (
+                    <CrearPronostico onPronosticoCreado={handlePronosticoCreado} />
+                ) : (
                     <AnalisisPronosticos pronosticos={pronosticos} actualizarPronosticos={actualizarPronosticos} />
                 )}
             </main>

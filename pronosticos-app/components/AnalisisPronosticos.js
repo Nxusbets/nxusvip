@@ -4,76 +4,49 @@ import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const AnalisisPronosticos = ({ pronosticos, actualizarPronosticos }) => {
-    const gananciaTotal = pronosticos.reduce((total, pronostico) => total + pronostico.ganancia, 0);
+    const pronosticosArray = Array.isArray(pronosticos) ? pronosticos : [];
+    const gananciaTotal = pronosticosArray.reduce((total, pronostico) => total + pronostico.ganancia, 0);
+
     const [currentPage, setCurrentPage] = useState(1);
     const pronosticosPerPage = 10;
-    const limpiarTexto = (texto) => {
-        if (texto === undefined) {
-            return '';
-        }
-        return texto.replace(/[^a-zA-Z0-9\s]/g, '').toLowerCase().trim();
-    };
 
     const modificarEstado = async (id, nuevoEstado, pronostico) => {
         let nuevaGanancia = 0;
-        if (nuevoEstado === 'Perdido') {
-            nuevaGanancia = -100;
-        } else if (nuevoEstado === 'Perdido Parcial') {
-            nuevaGanancia = -50;
-        } else if (nuevoEstado === pronostico.pronostico) {
-            nuevaGanancia = (pronostico.cuota - 1) * 100;
-        } else if (nuevoEstado === 'Ganancia Parcial') {
-            nuevaGanancia = ((pronostico.cuota - 1) * 100) / 2;
-        }
+        if (nuevoEstado === 'Perdido') nuevaGanancia = -100;
+        else if (nuevoEstado === 'Perdido Parcial') nuevaGanancia = -50;
+        else if (nuevoEstado === pronostico.pronostico) nuevaGanancia = (pronostico.cuota - 1) * 100;
+        else if (nuevoEstado === 'Ganancia Parcial') nuevaGanancia = ((pronostico.cuota - 1) * 100) / 2;
 
-        const pronosticosActualizados = pronosticos.map(pronostico => {
-            if (pronostico._id === id) {
-                return { ...pronostico, resultado: nuevoEstado, ganancia: nuevaGanancia };
-            }
-            return pronostico;
-        });
+        const pronosticosActualizados = pronosticosArray.map(p => p._id === id ? { ...p, resultado: nuevoEstado, ganancia: nuevaGanancia } : p);
         actualizarPronosticos(pronosticosActualizados);
 
         try {
             await axios.put(`/api/pronosticos/${id}`, { resultado: nuevoEstado, ganancia: nuevaGanancia });
         } catch (error) {
             console.error('Error al modificar el estado:', error);
+            alert('Error al modificar el estado. Inténtalo de nuevo.');
         }
     };
 
     const eliminarPronostico = async (id) => {
         try {
             await axios.delete(`/api/pronosticos/${id}`);
-            const pronosticosActualizados = pronosticos.filter(pronostico => pronostico._id !== id);
+            const pronosticosActualizados = pronosticosArray.filter(p => p._id !== id);
             actualizarPronosticos(pronosticosActualizados);
         } catch (error) {
             console.error('Error al eliminar el pronóstico:', error);
+            alert('Error al eliminar el pronóstico. Inténtalo de nuevo.');
         }
     };
 
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        visible: { opacity: 1, transition: { duration: 0.5 } },
-    };
-
-    const listItemVariants = {
-        hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
-        exit: { opacity: 0, y: -20, transition: { duration: 0.2 } },
-    };
+    const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { duration: 0.5 } } };
+    const listItemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }, exit: { opacity: 0, y: -20, transition: { duration: 0.2 } } };
 
     const indexOfLastPronostico = currentPage * pronosticosPerPage;
     const indexOfFirstPronostico = indexOfLastPronostico - pronosticosPerPage;
-    const currentPronosticos = pronosticos.slice(indexOfFirstPronostico, indexOfLastPronostico);
-
-    const paginate = (pageNumber) => setCurrentPage(pageNumber);
-
-    // Definimos pageNumbers aquí, antes de usarlo
-    const pageNumbers = [];
-    for (let i = 1; i <= Math.ceil(pronosticos.length / pronosticosPerPage); i++) {
-        pageNumbers.push(i);
-    }
-
+    const currentPronosticos = pronosticosArray.slice(indexOfFirstPronostico, indexOfLastPronostico);
+    const pageNumbers = Array.from({ length: Math.ceil(pronosticosArray.length / pronosticosPerPage) }, (_, i) => i + 1);
+    
     return (
         <motion.div
             className="container mt-4"
@@ -90,8 +63,8 @@ const AnalisisPronosticos = ({ pronosticos, actualizarPronosticos }) => {
                         </div>
                         <div className="card-body">
                             <div className="mb-4 text-center">
-                                <p><strong>Total de Pronósticos:</strong> {pronosticos.length}</p>
-                                <p><strong>Ganancia Total:</strong> {gananciaTotal}</p>
+                                <p><strong>Total de Pronósticos:</strong> {pronosticos && Array.isArray(pronosticos) ? pronosticos.length : 0}</p>
+                                <p><strong>Ganancia Total:</strong> {gananciaTotal || 0}</p>
                             </div>
 
                             <ul className="list-group">
