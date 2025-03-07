@@ -2,8 +2,10 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSession } from 'next-auth/react';
 
 const AnalisisPronosticos = ({ pronosticos, actualizarPronosticos }) => {
+    const { data: session } = useSession();
     const pronosticosArray = Array.isArray(pronosticos) ? pronosticos : [];
     const gananciaTotal = pronosticosArray.reduce((total, pronostico) => total + pronostico.ganancia, 0);
 
@@ -16,6 +18,7 @@ const AnalisisPronosticos = ({ pronosticos, actualizarPronosticos }) => {
         else if (nuevoEstado === 'Perdido Parcial') nuevaGanancia = -50;
         else if (nuevoEstado === pronostico.pronostico) nuevaGanancia = (pronostico.cuota - 1) * 100;
         else if (nuevoEstado === 'Ganancia Parcial') nuevaGanancia = ((pronostico.cuota - 1) * 100) / 2;
+        else if (nuevoEstado === 'En Juego') nuevaGanancia = 0; // Establecer ganancia a 0 para "En Juego"
 
         const pronosticosActualizados = pronosticosArray.map(p => p._id === id ? { ...p, resultado: nuevoEstado, ganancia: nuevaGanancia } : p);
         actualizarPronosticos(pronosticosActualizados);
@@ -46,7 +49,7 @@ const AnalisisPronosticos = ({ pronosticos, actualizarPronosticos }) => {
     const indexOfFirstPronostico = indexOfLastPronostico - pronosticosPerPage;
     const currentPronosticos = pronosticosArray.slice(indexOfFirstPronostico, indexOfLastPronostico);
     const pageNumbers = Array.from({ length: Math.ceil(pronosticosArray.length / pronosticosPerPage) }, (_, i) => i + 1);
-    
+
     return (
         <motion.div
             className="container mt-4"
@@ -89,16 +92,25 @@ const AnalisisPronosticos = ({ pronosticos, actualizarPronosticos }) => {
                                                 <button className="btn btn-danger btn-sm ms-2" style={{ backgroundColor: 'red', color: 'white' }}>Perdido</button>
                                             ) : pronostico.resultado === 'Perdido Parcial' ? (
                                                 <button className="btn btn-secondary btn-sm ms-2" style={{ backgroundColor: 'purple', color: 'white' }}>Perdido Parcial</button>
-                                            ) : null}
+                                            ) : pronostico.resultado === 'En Juego' ? (
+                                                <button className="btn btn-primary btn-sm ms-2" style={{ backgroundColor: 'blue', color: 'white' }}>En Juego</button>
+                                            ) : (
+                                                <button className="btn btn-secondary btn-sm ms-2" style={{ backgroundColor: 'gray', color: 'white' }}>En Juego</button>
+                                            )}
                                             <br />
                                             <strong>Cuota:</strong> {pronostico.cuota}<br />
                                             <strong>Ganancia:</strong> {pronostico.ganancia}<br />
                                             <strong>Estado:</strong>
-                                            <button className="btn btn-success btn-sm ms-2" style={{ backgroundColor: 'green', color: 'white' }} onClick={() => modificarEstado(pronostico._id, pronostico.pronostico, pronostico)}>Ganado</button>
-                                            <button className="btn btn-warning btn-sm ms-2" style={{ backgroundColor: 'pink', color: 'white' }} onClick={() => modificarEstado(pronostico._id, 'Ganancia Parcial', pronostico)}>Ganancia Parcial</button>
-                                            <button className="btn btn-danger btn-sm ms-2" style={{ backgroundColor: 'red', color: 'white' }} onClick={() => modificarEstado(pronostico._id, 'Perdido', pronostico)}>Perdido</button>
-                                            <button className="btn btn-secondary btn-sm ms-2" style={{ backgroundColor: 'purple', color: 'white' }} onClick={() => modificarEstado(pronostico._id, 'Perdido Parcial', pronostico)}>Perdido Parcial</button>
-                                            <button className="btn btn-danger btn-sm ms-2" style={{ backgroundColor: 'orange', color: 'white' }} onClick={() => eliminarPronostico(pronostico._id)}>Eliminar</button>
+                                            {session?.user?.role === 'admin' && (
+                                                <>
+                                                    <button className="btn btn-primary btn-sm ms-2" style={{ backgroundColor: 'blue', color: 'white' }} onClick={() => modificarEstado(pronostico._id, 'En Juego', pronostico)}>En Juego</button>
+                                                    <button className="btn btn-success btn-sm ms-2" style={{ backgroundColor: 'green', color: 'white' }} onClick={() => modificarEstado(pronostico._id, pronostico.pronostico, pronostico)}>Ganado</button>
+                                                    <button className="btn btn-warning btn-sm ms-2" style={{ backgroundColor: 'pink', color: 'white' }} onClick={() => modificarEstado(pronostico._id, 'Ganancia Parcial', pronostico)}>Ganancia Parcial</button>
+                                                    <button className="btn btn-danger btn-sm ms-2" style={{ backgroundColor: 'red', color: 'white' }} onClick={() => modificarEstado(pronostico._id, 'Perdido', pronostico)}>Perdido</button>
+                                                    <button className="btn btn-secondary btn-sm ms-2" style={{ backgroundColor: 'purple', color: 'white' }} onClick={() => modificarEstado(pronostico._id, 'Perdido Parcial', pronostico)}>Perdido Parcial</button>
+                                                    <button className="btn btn-danger btn-sm ms-2" style={{ backgroundColor: 'orange', color: 'white' }} onClick={() => eliminarPronostico(pronostico._id)}>Eliminar</button>
+                                                </>
+                                            )}
                                         </motion.li>
                                     ))}
                                 </AnimatePresence>

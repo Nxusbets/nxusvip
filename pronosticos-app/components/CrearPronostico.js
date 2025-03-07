@@ -2,13 +2,15 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
+import { useSession } from 'next-auth/react';
 
 const CrearPronostico = ({ onPronosticoCreado }) => {
+    const { data: session } = useSession();
     const [partido, setPartido] = useState('');
     const [pronostico, setPronostico] = useState('');
     const [cuota, setCuota] = useState('');
     const [mensaje, setMensaje] = useState(null);
-    const [cargando, setCargando] = useState(false); // Estado para indicador de carga
+    const [cargando, setCargando] = useState(false);
 
     const mostrarMensaje = (tipo, texto) => {
         setMensaje({ tipo, texto });
@@ -17,13 +19,13 @@ const CrearPronostico = ({ onPronosticoCreado }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setMensaje(null);
-        setCargando(true); // Iniciar carga
+        setCargando(true);
 
         const cuotaNum = parseFloat(cuota);
 
         if (isNaN(cuotaNum)) {
             mostrarMensaje('error', 'Cuota no es un número válido.');
-            setCargando(false); // Detener carga
+            setCargando(false);
             return;
         }
 
@@ -53,7 +55,7 @@ const CrearPronostico = ({ onPronosticoCreado }) => {
                 mostrarMensaje('error', 'Error al crear el pronóstico.');
             }
         } finally {
-            setCargando(false); // Detener carga
+            setCargando(false);
         }
     };
 
@@ -66,6 +68,35 @@ const CrearPronostico = ({ onPronosticoCreado }) => {
         hidden: { opacity: 0, scale: 0.9 },
         visible: { opacity: 1, scale: 1, transition: { duration: 0.4 } },
     };
+
+    if (session?.user?.role !== 'admin') {
+        return (
+            <motion.div
+                className="container mt-4"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+            >
+                <div className="row justify-content-center">
+                    <div className="col-md-6">
+                        <motion.div
+                            className="card"
+                            variants={cardVariants}
+                            initial="hidden"
+                            animate="visible"
+                        >
+                            <div className="card-header" style={{ backgroundColor: 'yellow', color: 'black', textAlign: 'center' }}>
+                                <h2>Crear Pronóstico</h2>
+                            </div>
+                            <div className="card-body">
+                                <p>No tienes permiso para crear pronósticos.</p>
+                            </div>
+                        </motion.div>
+                    </div>
+                </div>
+            </motion.div>
+        );
+    }
 
     return (
         <motion.div
